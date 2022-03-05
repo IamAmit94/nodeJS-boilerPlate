@@ -1,23 +1,17 @@
 const express = require("express");
 const Router = express.Router();
-const authorized = require("../helpers/middleware");
 const accountController = require("../controllers/userAct");
-
-// const accountController1 = require('../controllers/product')
+const jwtRefresh = require("../controllers/userAct");
+const verifyToken = require("../helpers/middleware");
 
 Router.post("/Signup", accountController.userSignup);
 Router.post("/Login", accountController.login);
-Router.post("/Logout", authorized.verifyToken, accountController.userLogout);
-Router.post(
-  "/ChangePassword",
-  authorized.verifyToken,
-  accountController.changePswd
-);
-Router.get(
-  "/UpdateProfile",
-  authorized.verifyToken,
-  accountController.updateProfile
-);
-Router.get("/UserLists", authorized.verifyToken, accountController.listUser);
+Router.post("/Logout", verifyToken, accountController.userLogout);
+Router.post("/ChangePassword", verifyToken, accountController.changePswd);
+Router.get("/UpdateProfile", verifyToken, accountController.updateProfile);
+Router.get("/UserLists", verifyToken, accountController.listUser);
+
+// Refresh Token API
+Router.post("/refreshToken", verifyToken, accountController.refreshToken);
 
 module.exports = Router;

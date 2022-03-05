@@ -9,18 +9,18 @@ const userSignup = async (req, res) => {
   try {
     console.log("UserSignUp------------------->");
     const userForm = await createAccount.validateAsync(req.body);
-
     const validateEmail = await userModel.findOne({ email: userForm.email });
 
     if (validateEmail) {
       throw Error("Account already exist with this email.");
     } else {
       const user = await new userModel(req.body).save();
-      const token = await createToken(user);
+      const token1 = await createToken(user, "30d");
+      const token2 = await createToken(user, "60d");
 
       const UpdateUser = await userModel.findOneAndUpdate(
         { _id: user._id },
-        { token: token },
+        { accessToken: token1, refreshToken: token2 },
         { new: true }
       );
       res.status(200).send({ data: UpdateUser });
@@ -39,11 +39,12 @@ const login = async (req, res) => {
       req.body.password
     );
     console.log(" User Data", userLogin);
-    const token = await createToken(userLogin);
+    const token1 = await createToken(userLogin, "30d");
+    const token2 = await createToken(userLogin, "60d");
 
     const UpdateUser = await userModel.findOneAndUpdate(
       { _id: userLogin._id },
-      { token: token },
+      { accessToken: token1, refreshToken: token2 },
       { new: true }
     );
 
@@ -135,6 +136,29 @@ const listUser = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// Creating the refresh and normal token
+const refreshToken = async (req, res) => {
+  try {
+    console.log("Refresh Token API----------->", req.user.id);
+    const userData = await userModel.findOne({ _id: req.user.id });
+    if (!userData) {
+      throw Error(responseMessage.USER_NOT_FOUND);
+    }
+
+    const token = {
+      accessToken: await createToken(userData, "30d"),
+      refreshToken: await createToken(userData, "60d"),
+    };
+
+    // responseHelper.data(res, token, 200);
+    res.status(200).json(token);
+  } catch (err) {
+    // responseHelper.failure(res, error, 400);
+    res.status(400).json({ message: err.message });
+  }
+};
+
 module.exports = {
   userSignup,
   login,
@@ -142,4 +166,5 @@ module.exports = {
   changePswd,
   updateProfile,
   listUser,
+  refreshToken,
 };
